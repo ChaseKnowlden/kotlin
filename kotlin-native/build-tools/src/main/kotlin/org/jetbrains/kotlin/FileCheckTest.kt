@@ -1,0 +1,74 @@
+/*
+ * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+
+package org.jetbrains.kotlin
+
+import groovy.lang.Closure
+import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.tasks.*
+import org.jetbrains.kotlin.gradle.plugin.tasks.KonanCompileProgramTask
+import org.jetbrains.kotlin.konan.target.AppleConfigurables
+import org.jetbrains.kotlin.gradle.plugin.tasks.KonanCompileTask
+import java.io.File
+import java.nio.file.Path
+import java.nio.file.Files
+
+/**
+ * Gradle task that wraps FileCheck LLVM utility.
+ */
+open class FileCheckTest : DefaultTask() {
+
+    private val target = project.testTarget
+    private val platform = project.platformManager.platform(target)
+    private val configurables = platform.configurables
+
+    private val llvmToolsDir = "${configurables.absoluteLlvmHome}/bin"
+
+    // TODO: Add FileCheck to LLVM.
+    private val fileCheck = "C:/Users/aceis/llvm/llvm-stage-1-build/bin/FileCheck"
+
+    /**
+     * File annotated with FileCheck directives.
+     */
+    @InputFile
+    lateinit var annotatedSource: File
+
+    /**
+     * LLVM IR that should match [annotatedSource].
+     */
+    @get:Internal
+    lateinit var llvmIr: File
+
+    @TaskAction
+    fun run() {
+        runFileCheck(annotatedSource.toPath(), llvmIr.toPath())
+    }
+
+    /**
+     * Check that [inputFile] matches [annotatedFile] with FileCheck.
+     */
+    private fun runFileCheck(annotatedFile: Path, inputFile: Path): ProcessOutput {
+        val args = arrayOf(annotatedFile.toAbsolutePath().toString(), "--input-file", inputFile.toAbsolutePath().toString())
+        return runProcess(localExecutor(project), fileCheck, *args)
+                .ensureSuccessful(fileCheck, *args)
+    }
+
+    private fun ProcessOutput.ensureSuccessful(vararg command: String): ProcessOutput {
+        if (exitCode != 0) {
+            println("""
+                    ${command.joinToString(separator = " ")} failed.
+                    exitCode: $exitCode
+                    stdout:
+                    $stdOut
+                    stderr:
+                    $stdErr
+                """.trimIndent())
+            throw TestFailedException("${command.joinToString(separator = " ")} failed")
+        }
+        return this
+    }
+}

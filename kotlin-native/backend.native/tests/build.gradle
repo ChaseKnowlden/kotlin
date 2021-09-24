@@ -144,6 +144,8 @@ allprojects {
 
     // backent.native/tests/coverage
     ext.testOutputCoverage = rootProject.file("$testOutputRoot/coverage")
+
+    ext.testOutputFileCheck = rootProject.file("$testOutputRoot/filecheck")
 }
 testOutputExternal.mkdirs()
 testOutputStdlib.mkdirs()
@@ -5811,6 +5813,38 @@ pluginTest("runtime_basic_init", "nopPlugin") {
     source = "runtime/basic/runtime_basic_init.kt"
     flags = ["-tr"]
 }
+
+
+Task fileCheckTest(String name, Closure<FileCheckTest> configureClosure) {
+    return project.tasks.create(name, FileCheckTest) { task ->
+        task.configure(configureClosure)
+        task.llvmIr = project.file("$testOutputFileCheck/$name/out.ll")
+        if (task.enabled) {
+            konanArtifacts {
+                // We could use `bitcode` here to make things faster. But:
+                // 1. `bitcode` has no other usages.
+                // 2. Unification should help porting to the new test infra.
+                // 3. Compiler might behave differently when outputting bitcode instead of object files.
+                program(name, targets: [ target ]) {
+                    srcFiles task.annotatedSource
+                    baseDir "$testOutputFileCheck/$name"
+                    extraOpts project.globalTestArgs
+                    extraOpts "-Xtemporary-files-dir=$testOutputFileCheck/$name", "-Xsave-llvm-ir"
+                }
+                UtilsKt.dependsOnKonanBuildingTask(task, name, target)
+            }
+        }
+    }
+}
+
+fileCheckTest("filecheck_smoke0") {
+    annotatedSource = project.file('filecheck/smoke/smoke0/main.kt')
+}
+
+fileCheckTest("filecheck_smoke1") {
+    annotatedSource = project.file('filecheck/smoke/smoke1/main.kt')
+}
+
 
 dependencies {
     nopPluginApi project(kotlinCompilerModule)
