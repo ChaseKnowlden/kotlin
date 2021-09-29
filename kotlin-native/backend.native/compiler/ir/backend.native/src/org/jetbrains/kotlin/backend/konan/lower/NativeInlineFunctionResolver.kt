@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesExtractionFr
 import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesInInlineFunctionsLowering
 import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesInInlineLambdasLowering
 import org.jetbrains.kotlin.backend.konan.Context
-import org.jetbrains.kotlin.backend.konan.InlineFunctionInfo
+import org.jetbrains.kotlin.backend.konan.InlineFunctionOriginInfo
 import org.jetbrains.kotlin.backend.konan.descriptors.findPackage
 import org.jetbrains.kotlin.ir.declarations.IrExternalPackageFragment
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -33,10 +33,10 @@ internal class NativeInlineFunctionResolver(override val context: Context) : Def
         val functionFromCache = function.findPackage() is IrExternalPackageFragment
         if (!functionFromCache) {
             context.specialDeclarationsFactory.loweredInlineFunctions[function] =
-                    InlineFunctionInfo(function.file, function.startOffset, function.endOffset)
+                    InlineFunctionOriginInfo(function.file, function.startOffset, function.endOffset)
         } else {
             val moduleDescriptor = packageFragment.packageFragmentDescriptor.containingDeclaration
-            val moduleDeserializer = context.irLinker!!.cachedLibraryModuleDeserializers[moduleDescriptor]
+            val moduleDeserializer = context.irLinker.cachedLibraryModuleDeserializers[moduleDescriptor]
                     ?: error("No module deserializer for ${function.render()}")
             context.specialDeclarationsFactory.loweredInlineFunctions[function] = moduleDeserializer.deserializeInlineFunction(function)
         }

@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.backend.common.serialization.linkerissues.UserVisibl
 import org.jetbrains.kotlin.backend.konan.CachedLibraries
 import org.jetbrains.kotlin.backend.common.serialization.encodings.FunctionFlags
 import org.jetbrains.kotlin.backend.konan.*
-import org.jetbrains.kotlin.backend.konan.InlineFunctionInfo
+import org.jetbrains.kotlin.backend.konan.InlineFunctionOriginInfo
 import org.jetbrains.kotlin.backend.konan.descriptors.ClassLayoutBuilder
 import org.jetbrains.kotlin.backend.konan.descriptors.findPackage
 import org.jetbrains.kotlin.backend.konan.descriptors.isInteropLibrary
@@ -689,12 +689,12 @@ internal class KonanIrLinker(
 
         private val inlineFunctionFiles = mutableMapOf<IrExternalPackageFragment, IrFile>()
 
-        fun deserializeInlineFunction(function: IrFunction): InlineFunctionInfo {
+        fun deserializeInlineFunction(function: IrFunction): InlineFunctionOriginInfo {
             val packageFragment = function.findPackage() as? IrExternalPackageFragment
                     ?: error("Expected an external package fragment for ${function.render()}")
             if (function.parents.any { (it as? IrFunction)?.isInline == true}) {
                 // Already deserialized by the top-most inline function.
-                return InlineFunctionInfo(
+                return InlineFunctionOriginInfo(
                         inlineFunctionFiles[packageFragment]
                                 ?: error("${function.render()} should've been deserialized along with its parent"),
                         function.startOffset, function.endOffset
@@ -750,9 +750,14 @@ internal class KonanIrLinker(
 
             fileDeserializationInfo.fakeOverrideBuilder.provideFakeOverrides()
 
+            inlineFunctionFiles[packageFragment]?.let {
+                require(it == fileDeserializationInfo.file) {
+                    "Different files ${it.fileEntry.name} and ${fileDeserializationInfo.file.fileEntry.name} have the same $packageFragment"
+                }
+            }
             inlineFunctionFiles[packageFragment] = fileDeserializationInfo.file
 
-            return InlineFunctionInfo(fileDeserializationInfo.file, inlineFunctionReference.startOffset, inlineFunctionReference.endOffset)
+            return InlineFunctionOriginInfo(fileDeserializationInfo.file, inlineFunctionReference.startOffset, inlineFunctionReference.endOffset)
         }
 
         private val classesFields by lazy {

@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.backend.common.IrValidatorConfig
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
 import org.jetbrains.kotlin.backend.common.phaser.*
 import org.jetbrains.kotlin.backend.common.serialization.CompatibilityMode
-import org.jetbrains.kotlin.backend.common.serialization.codedInputStream
 import org.jetbrains.kotlin.backend.common.serialization.metadata.KlibMetadataMonolithicSerializer
 import org.jetbrains.kotlin.backend.konan.descriptors.isFromInteropLibrary
 import org.jetbrains.kotlin.backend.konan.llvm.*
@@ -14,7 +13,6 @@ import org.jetbrains.kotlin.backend.konan.lower.ExpectToActualDefaultValueCopier
 import org.jetbrains.kotlin.backend.konan.lower.SamSuperTypesChecker
 import org.jetbrains.kotlin.backend.konan.objcexport.ObjCExport
 import org.jetbrains.kotlin.backend.konan.serialization.*
-import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.ir.IrElement
@@ -129,7 +127,7 @@ internal val psiToIrPhase = konanUnitPhase(
 internal val buildAdditionalCacheInfoPhase = konanUnitPhase(
         op = {
             irModules.values.single().let { module ->
-                val moduleDeserializer = irLinker!!.nonCachedLibraryModuleDeserializers[module.descriptor]
+                val moduleDeserializer = irLinker.nonCachedLibraryModuleDeserializers[module.descriptor]
                 if (moduleDeserializer == null) {
                     require(module.descriptor.isFromInteropLibrary()) { "No module deserializer for ${module.descriptor}" }
                 } else {
@@ -142,7 +140,7 @@ internal val buildAdditionalCacheInfoPhase = konanUnitPhase(
                         override fun visitClass(declaration: IrClass) {
                             declaration.acceptChildrenVoid(this)
 
-                            if (declaration.isExported && declaration.descriptor !is FunctionClassDescriptor)
+                            if (declaration.isExported && declaration.origin != DECLARATION_ORIGIN_FUNCTION_CLASS)
                                 classFields.add(moduleDeserializer.buildClassFields(declaration, getLayoutBuilder(declaration).getDeclaredFields()))
                         }
 

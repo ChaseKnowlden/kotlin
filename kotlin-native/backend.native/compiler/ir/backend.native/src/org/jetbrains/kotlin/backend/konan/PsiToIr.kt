@@ -199,7 +199,8 @@ internal fun Context.psiToIr(
     // Note: coupled with [shouldLower] below.
     irModules = modules.filterValues { llvmModuleSpecification.containsModule(it) }
 
-    irLinker = irDeserializer as? KonanIrLinker
+    if (!isProducingLibrary)
+        irLinker = irDeserializer as KonanIrLinker
 
     ir.symbols = symbols
 

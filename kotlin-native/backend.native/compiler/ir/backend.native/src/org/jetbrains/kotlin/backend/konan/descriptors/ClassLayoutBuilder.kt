@@ -472,7 +472,7 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context, va
             val moduleDescriptor = packageFragment.packageFragmentDescriptor.containingDeclaration
             if (moduleDescriptor.isFromInteropLibrary())
                 return emptyList()
-            val moduleDeserializer = context.irLinker!!.cachedLibraryModuleDeserializers[moduleDescriptor]
+            val moduleDeserializer = context.irLinker.cachedLibraryModuleDeserializers[moduleDescriptor]
                     ?: error("No module deserializer for ${irClass.render()}")
             val fields = moduleDeserializer.deserializeClassFields(irClass).toMutableList()
             if (irClass.isInner)

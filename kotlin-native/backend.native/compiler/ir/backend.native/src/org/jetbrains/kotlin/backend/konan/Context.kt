@@ -54,7 +54,7 @@ import org.jetbrains.kotlin.konan.util.disposeNativeMemoryAllocator
 import org.jetbrains.kotlin.library.SerializedIrModule
 import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyExternal
 
-internal class InlineFunctionInfo(val irFile: IrFile, val startOffset: Int, val endOffset: Int)
+internal class InlineFunctionOriginInfo(val irFile: IrFile, val startOffset: Int, val endOffset: Int)
 
 /**
  * Offset for synthetic elements created by lowerings and not attributable to other places in the source code.
@@ -70,7 +70,7 @@ internal class SpecialDeclarationsFactory(val context: Context) {
 
     private val bridges = mutableMapOf<BridgeKey, IrSimpleFunction>()
 
-    val loweredInlineFunctions = mutableMapOf<IrFunction, InlineFunctionInfo>()
+    val loweredInlineFunctions = mutableMapOf<IrFunction, InlineFunctionOriginInfo>()
 
     object DECLARATION_ORIGIN_FIELD_FOR_OUTER_THIS :
             IrDeclarationOriginImpl("FIELD_FOR_OUTER_THIS")
@@ -498,7 +498,7 @@ internal class Context(config: KonanConfig) : KonanBackendContext(config) {
      */
     val internalAbi = InternalAbi(this)
 
-    var irLinker: KonanIrLinker? = null
+    lateinit var irLinker: KonanIrLinker
 
     val inlineFunctionBodies = mutableListOf<SerializedInlineFunctionReference>()
 
