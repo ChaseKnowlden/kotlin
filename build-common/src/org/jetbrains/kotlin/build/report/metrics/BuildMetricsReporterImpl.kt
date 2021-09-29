@@ -37,6 +37,10 @@ class BuildMetricsReporterImpl : BuildMetricsReporter {
         myBuildMetrics.add(metric, value)
     }
 
+    override fun addMetric(metric: BuildTime, fn: () -> Unit) {
+        measure(metric, fn)
+    }
+
     override fun addAttribute(attribute: BuildAttribute) {
         myBuildAttributes.add(attribute)
     }
