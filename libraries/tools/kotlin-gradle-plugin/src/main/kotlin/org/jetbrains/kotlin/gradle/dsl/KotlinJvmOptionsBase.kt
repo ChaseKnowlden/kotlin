@@ -44,6 +44,7 @@ internal abstract class KotlinJvmOptionsBase : org.jetbrains.kotlin.gradle.dsl.K
             javaParametersField = value
         }
 
+    @Deprecated(message = "This option is not working well with Gradle caching and will be removed in the future.", level = DeprecationLevel.WARNING)
     override var jdkHome: kotlin.String? = null
 
     internal var jvmTargetField: kotlin.String? = null
@@ -63,6 +64,7 @@ internal abstract class KotlinJvmOptionsBase : org.jetbrains.kotlin.gradle.dsl.K
         }
 
     private var noStdlibField: kotlin.Boolean? = null
+    @Deprecated(message = "This option has no effect and will be removed in a future release.", level = DeprecationLevel.ERROR)
     override var noStdlib: kotlin.Boolean
         get() = noStdlibField ?: true
         set(value) {
