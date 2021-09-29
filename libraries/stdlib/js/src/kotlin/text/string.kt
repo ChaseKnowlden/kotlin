@@ -244,6 +244,11 @@ public inline fun String.match(regex: String): Array<String>? = asDynamic().matc
 @kotlin.internal.InlineOnly
 internal inline fun String.nativeReplace(pattern: RegExp, replacement: String): String = asDynamic().replace(pattern, replacement)
 
+/**
+ * Compares two strings lexicographically, optionally ignoring case differences.
+ *
+ * If [ignoreCase] is true, the result of `Char.uppercaseChar().lowercaseChar()` on each character is compared.
+ */
 @SinceKotlin("1.2")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 public actual fun String.compareTo(other: String, ignoreCase: Boolean = false): Int {
