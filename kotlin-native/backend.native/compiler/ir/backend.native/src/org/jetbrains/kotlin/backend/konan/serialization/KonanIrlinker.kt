@@ -318,6 +318,7 @@ internal class KonanIrLinker(
         private val cenumsProvider: IrProviderForCEnumAndCStructStubs,
         exportedDependencies: List<ModuleDescriptor>,
         private val cachedLibraries: CachedLibraries,
+        private val lazyIrForCaches: Boolean,
         override val userVisibleIrModulesSupport: UserVisibleIrModulesSupport
 ) : KotlinIrLinker(currentModule, messageLogger, builtIns, symbolTable, exportedDependencies) {
 
@@ -353,7 +354,7 @@ internal class KonanIrLinker(
                     val isCached = false //cachedLibraries.isLibraryCached(klib)
                     KonanInteropModuleDeserializer(moduleDescriptor, klib, isCached)
                 }
-                cachedLibraries.isLibraryCached(klib) -> {
+                lazyIrForCaches && cachedLibraries.isLibraryCached(klib) -> {
                     KonanCachedLibraryModuleDeserializer(moduleDescriptor, klib).also {
                         cachedLibraryModuleDeserializers[moduleDescriptor] = it
                     }
@@ -366,7 +367,8 @@ internal class KonanIrLinker(
             }
 
     override fun postProcess() {
-        stubGenerator.unboundSymbolGeneration = true
+        if (lazyIrForCaches)
+            stubGenerator.unboundSymbolGeneration = true
         super.postProcess()
     }
 

@@ -467,7 +467,7 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context, va
      * Fields declared in the class.
      */
     fun getDeclaredFields(): List<FieldInfo> {
-        if (!context.llvmModuleSpecification.containsDeclaration(irClass)) {
+        if (context.config.lazyIrForCaches && !context.llvmModuleSpecification.containsDeclaration(irClass)) {
             val packageFragment = irClass.findPackage()
             val moduleDescriptor = packageFragment.packageFragmentDescriptor.containingDeclaration
             if (moduleDescriptor.isFromInteropLibrary())

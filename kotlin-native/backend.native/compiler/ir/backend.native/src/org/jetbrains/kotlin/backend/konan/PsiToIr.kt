@@ -59,9 +59,10 @@ internal fun Context.psiToIr(
     )
     val irBuiltInsOverDescriptors = generatorContext.irBuiltIns as IrBuiltInsOverDescriptors
     val functionIrClassFactory: KonanIrAbstractDescriptorBasedFunctionFactory =
-            if (llvmModuleSpecification.containsModule(this.stdlibModule))
+            if (config.lazyIrForCaches && !llvmModuleSpecification.containsModule(this.stdlibModule))
+                LazyIrFunctionFactory(symbolTable, stubGenerator, irBuiltInsOverDescriptors, reflectionTypes)
+            else
                 BuiltInFictitiousFunctionIrClassFactory(symbolTable, irBuiltInsOverDescriptors, reflectionTypes)
-            else LazyIrFunctionFactory(symbolTable, stubGenerator, irBuiltInsOverDescriptors, reflectionTypes)
     irBuiltInsOverDescriptors.functionFactory = functionIrClassFactory
     val symbols = KonanSymbols(this, generatorContext.irBuiltIns, symbolTable, symbolTable.lazyWrapper)
 
@@ -104,6 +105,7 @@ internal fun Context.psiToIr(
                 irProviderForCEnumsAndCStructs,
                 exportedDependencies,
                 config.cachedLibraries,
+                config.lazyIrForCaches,
                 config.userVisibleIrModulesSupport
         ).also { linker ->
 
@@ -123,8 +125,11 @@ internal fun Context.psiToIr(
 
                 for (dependency in sortDependencies(dependencies).filter { it != moduleDescriptor }) {
                     val kotlinLibrary = (dependency.getCapability(KlibModuleOrigin.CAPABILITY) as? DeserializedKlibModuleOrigin)?.library
-                    if (isProducingLibrary || kotlinLibrary != null && config.cachedLibraries.isLibraryCached(kotlinLibrary))
+                    val isCachedLibrary = kotlinLibrary != null && config.cachedLibraries.isLibraryCached(kotlinLibrary)
+                    if (isProducingLibrary || (config.lazyIrForCaches && isCachedLibrary))
                         linker.deserializeOnlyHeaderModule(dependency, kotlinLibrary)
+                    else if (isCachedLibrary)
+                        linker.deserializeHeadersWithInlineBodies(dependency, kotlinLibrary!!)
                     else
                         linker.deserializeIrModuleHeader(dependency, kotlinLibrary, dependency.name.asString())
                 }
@@ -204,9 +209,8 @@ internal fun Context.psiToIr(
             (functionIrClassFactory as BuiltInFictitiousFunctionIrClassFactory).buildAllClasses()
         }
         internalAbi.init(irModules.values + irModule!!)
-        if (llvmModuleSpecification.containsModule(this.stdlibModule)) {
-            (functionIrClassFactory as BuiltInFictitiousFunctionIrClassFactory).module = (modules.values + irModule!!).single { it.descriptor.isNativeStdlib() }
-        }
+        (functionIrClassFactory as? BuiltInFictitiousFunctionIrClassFactory)?.module =
+                (modules.values + irModule!!).single { it.descriptor.isNativeStdlib() }
     }
 
     mainModule.files.forEach { it.metadata = KonanFileMetadataSource(mainModule) }
